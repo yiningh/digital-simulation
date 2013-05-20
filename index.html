@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en">
 <head>
-	<title>Digital Universe</title>
+	<title>Digital - physical</title>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
 	<style>
@@ -30,16 +30,6 @@
 	</style>
 </head>
 <body>
-<!-- 	<div id="map" style="width: 400px; height: 300px; float: left; padding: 0;"></div>
-	<div id="controls" style="">
-		<form id="map_form">
-			<input type="text" name="address" id="address" />
-			<button type="submit" id="searchButton" >Search</button>
-		</form>
-	</div> -->
-	
-<!-- 	<div id="text" style="width: 500px; height: 120px; float: left; padding-top: 10px; z-index:0; border-style:solid; border-width:medium;"></div> -->
-
 	<div id="textBox">
 		<p><b></b> the earth is moving: <span style="color:#2fa1d6">x</span> <span id="analogSpeed">360000</span> faster &nbsp; &nbsp;  the digital world is moving: <span style="color:#2fa1d6">x</span> <span id="digitalSpeed">-1028</span> slower than its actual speed.</p>
 	</div>
@@ -152,103 +142,11 @@
 	    }
 	}
 
-	// var rainBuffer = null;
-	// // Fix up prefixing
-
-	// function loadRainSound('audio/rain.wav') {
-	//   var request = new XMLHttpRequest();
-	//   request.open('GET', url, true);
-	//   request.responseType = 'arraybuffer';
-
-	//   // Decode asynchronously
-	//   request.onload = function() {
-	//     context.decodeAudioData(request.response, function(buffer) {
-	//       RainBuffer = buffer;
-	//     }, onError);
-	//   }
-	//   request.send();
-	// }
-
-	// var VolumeSample = {
-	// };
-
-	// // Gain node needs to be mutated by volume control.
-	// VolumeSample.gainNode = null;
-
-	// VolumeSample.play = function() {
-	//   if (!audioContext.createGain)
-	//     audioContext.createGain = audioContext.createGainNode;
-	//   this.gainNode = audioContext.createGain();
-	//   var source = audioContext.createBufferSource();
-	//   source.buffer = buffer;
-
-	//   // Connect source to a gain node
-	//   source.connect(this.gainNode);
-	//   // Connect gain node to destination
-	//   this.gainNode.connect(audioContext.destination);
-	//   // Start playback in a loop
-	//   source.loop = true;
-	//   if (!source.start)
-	//     source.start = source.noteOn;
-	//   source.start(0);
-	//   this.source = source;
-	// };
-
-	// VolumeSample.changeVolume = function(element) {
-	//   //var volume = element.value;
-	//   //var fraction = parseInt(element.value) / parseInt(element.max);
-	//   // Let's use an x*x curve (x-squared) since simple linear (x) does not
-	//   // sound as good.
-	//   this.gainNode.gain.value = volume;
-	// };
-
-	// VolumeSample.stop = function() {
-	//   if (!this.source.stop)
-	//     this.source.stop = source.noteOff;
-	//   this.source.stop(0);
-	// };
-
-	// VolumeSample.toggle = function() {
-	//   this.playing ? this.stop() : this.play();
-	//   this.playing = !this.playing;
-	// };
-
 	init();
 	animate();
 		
 	function init() 
 	{
-		//sound stuff
-		// buzz.defaults.loop = true;
-		// buzz.defaults.formats = ['ogg', 'wav'];
-		// buzz.defaults.preload = 'auto';
-		// buzz.defaults.autoplay = true;
-		// var rain = new buzz.sound("audio/fatboy.mp3");
-		// rain.set("id", "rain");
-		// var waiting = new buzz.sound("audio/fatboy.mp3");
-		// waiting.set("id", "waiting");
-		// var myGroup = new buzz.group([ 
-		//     rain, 
-		//     waiting
-		// ]); 
-
-		/* PLAY IT */
-		
-		  // var song_name = $(this).attr("id");
-		  // //myGroup.stop(); // stop all
-		  // for(var i in buzz.sounds){
-		  //   var soundID = buzz.sounds[i].get("id");
-		  //   if(soundID == song_name){
-		  //     buzz.sounds[i].play();
-		  //   }
-		  // }
-		//buzz.sounds[0].play();
-		
-
-		// $(".stopit").click(function(event){
-		//     myGroup.stop();
-		// });
-
 		// SOUND
 		if(!window.audioContext){
 		    audioContext = new webkitAudioContext;
@@ -256,8 +154,6 @@
 		} else {
 		    throw new Error('AudioContext not supported. :(');
 		}
-
-		//VolumeSample.play();
 
 		// SCENE
 		scene = new THREE.Scene();
@@ -337,10 +233,6 @@
 			scene.add( particles );
 
 		}
-		
-		// // axes
-		// var axes = new THREE.AxisHelper(100);
-		// scene.add( axes );
 
 		var earth = new THREE.ImageUtils.loadTexture( 'images/earth2.jpg', transparent = false );
 		earthMesh = new THREE.Mesh( 
@@ -364,7 +256,7 @@
 
 		var sphereGeom =  new THREE.SphereGeometry( 2000, 50, 50 ); // radius, segmentsWidth, segmentsHeight
 		mirrorSphereCamera = new THREE.CubeCamera( 0.2, 10000, 512/7  );
-		// mirrorCubeCamera.renderTarget.minFilter = THREE.LinearMipMapLinearFilter;
+
 		scene.add( mirrorSphereCamera );
 		var mirrorSphereMaterial = new THREE.MeshBasicMaterial( { envMap: mirrorSphereCamera.renderTarget } );
 		mirrorSphere = new THREE.Mesh( sphereGeom, mirrorSphereMaterial );
@@ -395,28 +287,6 @@
 		glitch = new THREE.Mesh(  new THREE.SphereGeometry( 2000, 50, 50 ), glitchMaterial );
 		glitch.position.set(5000, 0, 0);
 		scene.add( glitch );
-
-		// var resolution = 100;
-		// amplitude = 100*40;
-		// lineSize = 360 / resolution;
-		// var geometry1 = new THREE.Geometry();
-		// var material1 = new THREE.MeshBasicMaterial( { map: glitchTexture, color: 0xFFFFFF, opacity: 1.0} );
-		// for(var i = 0; i <= resolution; i++) {
-		//     var segment = ( i * lineSize ) * Math.PI / 180;
-		//     geometry1.vertices.push( new THREE.Vertex( new THREE.Vector3( Math.cos( segment ) * amplitude, 0, Math.sin( segment ) * amplitude ) ) );         
-		// }
-
-		// for(var i = 0; i < 100; i++ ){
-		// 	for(var i = 0; i <= resolution; i++) {
-		// 	    var segment = ( i * lineSize ) * Math.PI / 180;
-		// 	    geometry1.vertices.push( new THREE.Vertex( new THREE.Vector3( Math.cos( segment ) * amplitude, 0, Math.sin( segment ) * amplitude ) ) );         
-		// 	}
-		// 	var line = new THREE.Line( geometry1, material1 );
-		// 	line.position.set(5000+i, 0, 0);
-		// 	scene.add(line);
-		// 	amplitude -= 8000;
-		// 	console.log(amplitude);
-		//}
 
 		/////////
 		// GUI //
@@ -462,7 +332,7 @@
 		var samples2=convert255(samples);
 		wave.Make(samples2);
 		audio.src=wave.dataURI;
-		setTimeout(function() { audio.play(); }, 10); // page needs time to load?
+		setTimeout(function() { audio.play(); }, 10);
 	}
 
 	function normalize_invalid_values(samples) {
@@ -502,11 +372,7 @@
 		earthVolume = map(earthDistance, 0, 10000, 1, 0);
 		earthVolume = Math.round(earthVolume*10)/10;
 		earthVolume2 = map(earthDistance, 0, 7000, 1, 0);
-		//buzz.sounds[0].play();
-		// if ( keyboard.pressed("z") ) 
-		// { 
-		// 	// do something
-		// }
+
 		var time = new Date().getTime();
 		var timeDiff = time - lastTime;
 		var angleChange = angularSpeed * timeDiff * 2 * Math.PI / 5000;
@@ -537,7 +403,6 @@
 	}
 	timing = update.timing;
 	setInterval( function(){playSound(volume, timing)}, timing );
-	//setInterval( function(){buzz.sounds[0].play();}, 100);
 	earthVolume = update.earthVolume;
 
 	setInterval( function(){ rain.play(0, earthVolume); }, 1000);

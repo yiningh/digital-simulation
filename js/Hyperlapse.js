@@ -192,21 +192,26 @@ var Hyperlapse = function(container, params) {
 	_renderer.autoClearColor = false;
 	_renderer.setSize( _w, _h );
 
+	// mirrorPivot2 = new THREE.Object3D();
+	// mirrorSphere.add( mirrorPivot2 );
+
 	// CUBE THING
 	var cubeGeometry = new THREE.CubeGeometry( 800, 800, 800 );
 	var mapTexture = new THREE.Texture();
 	mapTexture.wrapS = mapTexture.wrapT = THREE.RepeatWrapping;
 	mapTexture.repeat.set( 0.5, 0.5 );
 	//mapTexture.offset = 0.05;
-	_mesh = new THREE.Mesh( 
-		cubeGeometry, 
-		new THREE.MeshLambertMaterial( { map: mapTexture, side: THREE.DoubleSide, fog: false } ) 
-	);
-	// _mesh = new THREE.Mesh( 
-	// 	new THREE.SphereGeometry( 300, 60, 40 ), 
-	// 	new THREE.MeshLambertMaterial( { map: new THREE.Texture(), side: THREE.DoubleSide, fog: false } ) 
+	// _mesh = new THREE.Mesh(
+	// 	cubeGeometry, 
+	// 	new THREE.MeshLambertMaterial( { map: mapTexture, side: THREE.DoubleSide, fog: false } )
 	// );
-	_mesh.position.set(1000,0,1000);
+	_mesh = new THREE.Mesh( 
+		new THREE.SphereGeometry( 700, 60, 40 ), 
+		new THREE.MeshLambertMaterial( { map: new THREE.Texture(), side: THREE.DoubleSide, fog: false } ) 
+	);
+	_mesh.position.x = 5000; 
+	_mesh.rotation.x = 45;
+	_mesh.rotation.y = 45;
 	scene.add( _mesh );
 
 	_container.appendChild( _renderer.domElement );
@@ -510,6 +515,7 @@ var Hyperlapse = function(container, params) {
 
 		requestAnimationFrame( animate );
 		render();
+
 	};
 
 	// animates the playhead forward or backward depending on direction

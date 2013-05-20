@@ -5,12 +5,28 @@
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
 	<style>
-		body 
-		{
+		body{
 			background-color: #191919;
 			margin: 0px;
 			overflow: hidden;
+			font-family: 'Arial', sans-serif;
 		}
+		#textBox{
+			position:absolute; 
+			bottom:0; 
+			right:0; 
+			z-index: 100;
+			background-color: #000;
+			padding:5px 15px;
+		}
+		p{
+			color:white;
+		}
+		#analogSpeed, #digitalSpeed{
+			color: #2fa1d6;
+		}
+
+
 	</style>
 </head>
 <body>
@@ -23,12 +39,18 @@
 	</div> -->
 	
 <!-- 	<div id="text" style="width: 500px; height: 120px; float: left; padding-top: 10px; z-index:0; border-style:solid; border-width:medium;"></div> -->
+
+	<div id="textBox">
+		<p><b></b> the earth is moving: <span style="color:#2fa1d6">x</span> <span id="analogSpeed">360000</span> faster &nbsp; &nbsp;  the digital world is moving: <span style="color:#2fa1d6">x</span> <span id="digitalSpeed">-1028</span> slower than its actual speed.</p>
+	</div>
+
 	<div id="pano" style="display:none"></div>
 	<div id="message"></div>
 
 	<script src="js/Three.js"></script>
 	<script src="js/Detector.js"></script>
 	<script src="js/Stats.js"></script>
+	<script src='js/DAT.GUI.min.js'></script>
 	<script src="js/TrackballControls.js"></script>
 	<script src="js/THREEx.KeyboardState.js"></script>
 	<script src="js/THREEx.FullScreen.js"></script>
@@ -37,7 +59,8 @@
 	<script src="https://maps.googleapis.com/maps/api/js?v=3.exp&sensor=false" type="text/javascript"></script> 
 	<script src="js/three.min.js"></script>
 	<script src="js/GSVPano.js"></script>
-
+	<script src="js/riffwave.js"></script>
+	<script src="js/buzz.js"></script> 
 	<script>
 	 /*
 	 	Project by Yi Ning Huang
@@ -56,15 +79,186 @@
 	var _renderer;
 	var earthMesh, cloudsMesh, glitch;
 	var sprite, geometry, bgParameters, color, size, materials = [];
+	var lineSize, amplitude, earthPivot, mirrorPivot, mirrorPivot2;
+
+	var earthPivotRotation = 0.001;
+	var mirrorPivotRotation = 0.03;
 
 	var angularSpeed = 0.005;
 	var lastTime = 0;
+	var volume = 1;
+	var timing = 5000;
+	var volumeEarth = 1;
+
+	var camPos;
+	var mirrorPosition;
+	var earthPos;
+	var digitalDistance;
+	var earthDistance;
+
+	var waiting = new sound('audio/waiting.wav');
+	var rain = new sound('audio/rain2.wav');
+	var restaurant = new sound('audio/restaurant2.wav');
+
+	function sound(source){
+	    var that = this;
+	    that.source = source;
+	    that.buffer = null;
+	    that.isLoaded = false;
+	    that.startSound;
+
+	    var getSound = new XMLHttpRequest();
+	    getSound.open('GET', that.source, 'true');
+	    getSound.responseType = 'arraybuffer';
+	    getSound.onload = function(){
+	        audioContext.decodeAudioData(getSound.response, function(buffer){
+	            that.buffer = buffer;
+	            that.isLoaded = true;
+	            if(that.isLoaded == true){
+	                that.startSound = audioContext.createBufferSource();
+	                that.startSound.buffer = that.buffer;
+	                that.startSound.connect(audioContext.destination);
+	            }
+	        });
+	    }
+	    getSound.send();
+	}
+
+	sound.prototype.play = function(time, volume){
+	    if(!time){time = 0;}else{time = time;}
+	    if(this.isLoaded == true){
+	        var gainNode = audioContext.createGainNode();
+	        gainNode.gain.value = volume;
+	        var startSound = audioContext.createBufferSource();
+	        startSound.buffer = this.buffer;
+	        startSound.connect(gainNode);
+	        gainNode.connect(audioContext.destination);
+	        startSound.noteOn(time);
+	    }
+	}
+
+
+	sound.prototype.stop = function(){
+	    if(this.isLoaded == true){
+	        this.startSound.noteOff(0);
+	    }
+	}
+
+	sound.prototype.start = function(){
+	    if(this.isLoaded == true){
+	        this.startSound.loop = true;
+	        this.startSound.playbackRate.value = 2.0;
+	        this.startSound.noteOn(0);
+	    }
+	}
+
+	// var rainBuffer = null;
+	// // Fix up prefixing
+
+	// function loadRainSound('audio/rain.wav') {
+	//   var request = new XMLHttpRequest();
+	//   request.open('GET', url, true);
+	//   request.responseType = 'arraybuffer';
+
+	//   // Decode asynchronously
+	//   request.onload = function() {
+	//     context.decodeAudioData(request.response, function(buffer) {
+	//       RainBuffer = buffer;
+	//     }, onError);
+	//   }
+	//   request.send();
+	// }
+
+	// var VolumeSample = {
+	// };
+
+	// // Gain node needs to be mutated by volume control.
+	// VolumeSample.gainNode = null;
+
+	// VolumeSample.play = function() {
+	//   if (!audioContext.createGain)
+	//     audioContext.createGain = audioContext.createGainNode;
+	//   this.gainNode = audioContext.createGain();
+	//   var source = audioContext.createBufferSource();
+	//   source.buffer = buffer;
+
+	//   // Connect source to a gain node
+	//   source.connect(this.gainNode);
+	//   // Connect gain node to destination
+	//   this.gainNode.connect(audioContext.destination);
+	//   // Start playback in a loop
+	//   source.loop = true;
+	//   if (!source.start)
+	//     source.start = source.noteOn;
+	//   source.start(0);
+	//   this.source = source;
+	// };
+
+	// VolumeSample.changeVolume = function(element) {
+	//   //var volume = element.value;
+	//   //var fraction = parseInt(element.value) / parseInt(element.max);
+	//   // Let's use an x*x curve (x-squared) since simple linear (x) does not
+	//   // sound as good.
+	//   this.gainNode.gain.value = volume;
+	// };
+
+	// VolumeSample.stop = function() {
+	//   if (!this.source.stop)
+	//     this.source.stop = source.noteOff;
+	//   this.source.stop(0);
+	// };
+
+	// VolumeSample.toggle = function() {
+	//   this.playing ? this.stop() : this.play();
+	//   this.playing = !this.playing;
+	// };
 
 	init();
-	animate()
+	animate();
 		
 	function init() 
 	{
+		//sound stuff
+		// buzz.defaults.loop = true;
+		// buzz.defaults.formats = ['ogg', 'wav'];
+		// buzz.defaults.preload = 'auto';
+		// buzz.defaults.autoplay = true;
+		// var rain = new buzz.sound("audio/fatboy.mp3");
+		// rain.set("id", "rain");
+		// var waiting = new buzz.sound("audio/fatboy.mp3");
+		// waiting.set("id", "waiting");
+		// var myGroup = new buzz.group([ 
+		//     rain, 
+		//     waiting
+		// ]); 
+
+		/* PLAY IT */
+		
+		  // var song_name = $(this).attr("id");
+		  // //myGroup.stop(); // stop all
+		  // for(var i in buzz.sounds){
+		  //   var soundID = buzz.sounds[i].get("id");
+		  //   if(soundID == song_name){
+		  //     buzz.sounds[i].play();
+		  //   }
+		  // }
+		//buzz.sounds[0].play();
+		
+
+		// $(".stopit").click(function(event){
+		//     myGroup.stop();
+		// });
+
+		// SOUND
+		if(!window.audioContext){
+		    audioContext = new webkitAudioContext;
+		    console.log('audio is true');
+		} else {
+		    throw new Error('AudioContext not supported. :(');
+		}
+
+		//VolumeSample.play();
+
 		// SCENE
 		scene = new THREE.Scene();
 		scene.fog = new THREE.Fog( 0xffffff, 1, 1000000 );
@@ -88,13 +282,14 @@
 		THREEx.WindowResize(renderer, camera);
 		THREEx.FullScreen.bindKey({ charCode : 'm'.charCodeAt(0) });
 		// CONTROLS
-		controls = new THREE.TrackballControls( camera );
-		// // STATS
-		// stats = new Stats();
-		// stats.domElement.style.position = 'absolute';
-		// stats.domElement.style.bottom = '0px';
-		// stats.domElement.style.zIndex = 100;
-		// container.appendChild( stats.domElement );
+		controls = new THREE.TrackballControls(camera, renderer.domElement);
+
+		// STATS
+		stats = new Stats();
+		stats.domElement.style.position = 'absolute';
+		stats.domElement.style.bottom = '0px';
+		stats.domElement.style.zIndex = 100;
+		container.appendChild( stats.domElement );
 		// LIGHT
 		var directionalLight = new THREE.DirectionalLight(0xffffff);
 		directionalLight.position.set(2, 1, 2).normalize();
@@ -114,6 +309,13 @@
 			vertex.z = Math.random() * 120000 - 60000;
 			geometry.vertices.push( vertex );
 		}
+		var bgresolution = 100;
+		var bgamplitude = 100*100;
+		var bgsize = 360 / bgresolution;
+		for(var i = 0; i <= bgresolution; i++) {
+		    var segment = ( i * bgsize ) * Math.PI / 180;
+		    geometry.vertices.push( new THREE.Vertex( new THREE.Vector3( Math.cos( segment ) * bgamplitude, 0, Math.sin( segment ) * bgamplitude ) ) );         
+		}
 
 		bgParameters = [ [ [1, 0, 1], sprite2, Math.random() * 1000 ],
 					   [ [1, 0, 1], sprite3, Math.random() * 500 ],
@@ -123,20 +325,15 @@
 					   ];
 		
 		for ( i = 0; i < bgParameters.length; i ++ ) {
-
 			color  = bgParameters[i][0];
 			sprite = bgParameters[i][1];
 			size   = bgParameters[i][2];
-
-			materials[i] = new THREE.ParticleBasicMaterial( { size: size, map: sprite, blending: THREE.AdditiveBlending, depthTest: false, transparent : true, opacity: Math.random() } );
+			materials[i] = new THREE.ParticleBasicMaterial( { size: size, map: sprite, blending: THREE.AdditiveBlending, depthTest: false, transparent : true, opacity: Math.random(), fog: true } );
 			materials[i].color.setHSL( color[0], color[1], color[2] );
-
 			particles = new THREE.ParticleSystem( geometry, materials[i] );
-
 			particles.rotation.x = Math.random() * 6;
 			particles.rotation.y = Math.random() * 6;
 			particles.rotation.z = Math.random() * 6;
-
 			scene.add( particles );
 
 		}
@@ -145,13 +342,25 @@
 		// var axes = new THREE.AxisHelper(100);
 		// scene.add( axes );
 
-		var earth = new THREE.ImageUtils.loadTexture( 'images/earth3.jpg', transparent = false );
+		var earth = new THREE.ImageUtils.loadTexture( 'images/earth2.jpg', transparent = false );
 		earthMesh = new THREE.Mesh( 
 			new THREE.SphereGeometry( 2000, 60, 50 ), 
 			new THREE.MeshLambertMaterial( { map: earth, side: THREE.DoubleSide, fog: false } ) 
 		);
 		earthMesh.position.set(-3000, 0, 0 );
 		scene.add( earthMesh );
+
+		earthPivot = new THREE.Object3D();
+		earthMesh.add( earthPivot );
+
+		var moon = new THREE.ImageUtils.loadTexture( 'images/moon.jpg', transparent = false );
+		moonMesh = new THREE.Mesh( 
+			new THREE.SphereGeometry( 500, 50, 50 ), 
+			new THREE.MeshLambertMaterial( { map: moon, side: THREE.DoubleSide, fog: false } ) 
+		);
+		moonMesh.position.x = -3500;
+		moonMesh.position.y = 500;
+		earthPivot.add( moonMesh );
 
 		var sphereGeom =  new THREE.SphereGeometry( 2000, 50, 50 ); // radius, segmentsWidth, segmentsHeight
 		mirrorSphereCamera = new THREE.CubeCamera( 0.2, 10000, 512/7  );
@@ -163,13 +372,17 @@
 		mirrorSphereCamera.position = mirrorSphere.position;
 		scene.add(mirrorSphere);
 
-		var moon = new THREE.ImageUtils.loadTexture( 'images/moon.jpg', transparent = false );
-		moonMesh = new THREE.Mesh( 
-			new THREE.SphereGeometry( 500, 50, 50 ), 
-			new THREE.MeshLambertMaterial( { map: moon, side: THREE.DoubleSide, fog: false } ) 
-		);
-		moonMesh.position.set(3000, 3000, -2000 );
-		scene.add( moonMesh );
+		mirrorPivot = new THREE.Object3D();
+		mirrorSphere.add( mirrorPivot );
+
+		var darkMaterial = new THREE.MeshLambertMaterial( { map:moon, color: 0xffffcc } );
+		var wireframeMaterial = new THREE.MeshBasicMaterial( { color: 969934, wireframe: true, transparent: true } ); 
+		var multiMaterial = [ darkMaterial, wireframeMaterial ]; 
+		var shape = THREE.SceneUtils.createMultiMaterialObject( 
+			new THREE.IcosahedronGeometry( 400, 1.2 ), // radius, subdivisions
+			multiMaterial );
+		shape.position.x = 3000;
+		mirrorPivot.add( shape );
 
 		var cageTexture = THREE.ImageUtils.loadTexture( 'images/milkyway.jpg' );
 		var cageMaterial = new THREE.MeshLambertMaterial( { map: cageTexture, transparent: true, opacity: 0.5, side:THREE.DoubleSide } );
@@ -183,16 +396,95 @@
 		glitch.position.set(5000, 0, 0);
 		scene.add( glitch );
 
-		// var clouds = new THREE.ImageUtils.loadTexture( 'images/earth-clouds.png', transparent = true, opacity = 0.5);
-		// cloudsMesh = new THREE.Mesh( 
-		// 	new THREE.SphereGeometry( 100000, 50, 50 ), 
-		// 	new THREE.MeshLambertMaterial( { map: clouds, side: THREE.FrontSide, transparent: true, opacity: 0.5} ) 
-		// );
-		// cloudsMesh.position.set(0, 0, 0 );
-		// scene.add( cloudsMesh );
-		
+		// var resolution = 100;
+		// amplitude = 100*40;
+		// lineSize = 360 / resolution;
+		// var geometry1 = new THREE.Geometry();
+		// var material1 = new THREE.MeshBasicMaterial( { map: glitchTexture, color: 0xFFFFFF, opacity: 1.0} );
+		// for(var i = 0; i <= resolution; i++) {
+		//     var segment = ( i * lineSize ) * Math.PI / 180;
+		//     geometry1.vertices.push( new THREE.Vertex( new THREE.Vector3( Math.cos( segment ) * amplitude, 0, Math.sin( segment ) * amplitude ) ) );         
+		// }
+
+		// for(var i = 0; i < 100; i++ ){
+		// 	for(var i = 0; i <= resolution; i++) {
+		// 	    var segment = ( i * lineSize ) * Math.PI / 180;
+		// 	    geometry1.vertices.push( new THREE.Vertex( new THREE.Vector3( Math.cos( segment ) * amplitude, 0, Math.sin( segment ) * amplitude ) ) );         
+		// 	}
+		// 	var line = new THREE.Line( geometry1, material1 );
+		// 	line.position.set(5000+i, 0, 0);
+		// 	scene.add(line);
+		// 	amplitude -= 8000;
+		// 	console.log(amplitude);
+		//}
+
+		/////////
+		// GUI //
+		/////////
+		var gui = new dat.GUI();
+		var guiParameters = { c: 0.001, p: 0.35 };
+		var cGUI = gui.add( guiParameters, 'c' ).min(0.001).max(1.0).step(0.001).name("ANALOG SPEED").listen();
+		cGUI.onChange( 
+			function()
+			{ earthPivotRotation = guiParameters.c; $('#analogSpeed').text( Math.round(360/guiParameters.c) );}
+		);
+		var pGUI = gui.add( guiParameters, 'p' ).min(0.01).max(1.0).step(0.01).name("DIGITAL SPEED").listen();
+		pGUI.onChange( 
+			function(){ 
+				mirrorPivotRotation = guiParameters.p;
+				$('#digitalSpeed').text(-1*Math.round(360/guiParameters.p));
+			}
+		);
+
+		earthPos = earthMesh.position;
+		mirrorPosition = mirrorSphere.position;
 	}
 
+	///////////
+	// SOUND //
+	///////////
+
+	function playSound(volume){
+		sampleRate = 44100;
+		var samples = [] //new Float32Array(samples_length);
+		var frequency = 220;                      // 220 Hz = "A" note
+		var samples_length = 44100;               // Plays for 1 second (44.1 KHz)
+		for (var i=0; i < samples_length ; i++) { // fills array with samples
+			var t = i/samples_length;               // time from 0 to 1
+			samples[i] = Math.sin( frequency * 2*Math.PI*t )*volume; // wave equation (between -1,+1)
+		}
+		normalize_invalid_values(samples); // keep samples between [-1, +1]
+
+		var wave = new RIFFWAVE();
+		wave.header.sampleRate = sampleRate;
+		wave.header.numChannels = 1;
+		var audio = new Audio();
+		var samples2=convert255(samples);
+		wave.Make(samples2);
+		audio.src=wave.dataURI;
+		setTimeout(function() { audio.play(); }, 10); // page needs time to load?
+	}
+
+	function normalize_invalid_values(samples) {
+	  for (var i=0, len=samples.length; i<len; i++) {
+	    if (samples[i]>1) {
+	      samples[i] = 1;
+	    } else if (samples[i]<-1) {
+	      samples[i] = -1;
+	    }
+	  }
+	}
+
+	function convert255(data) {
+	  var data_0_255=[];
+	  for (var i=0;i<data.length;i++) {
+	    data_0_255[i]=128+Math.round(127*data[i]);
+	  }
+	  return data_0_255;
+	}
+
+
+	// THREE ANIMATE
 	function animate() 
 	{
 	    requestAnimationFrame( animate );
@@ -202,6 +494,15 @@
 
 	function update()
 	{
+		camPos = camera.position;
+		digitalDistance = camPos.distanceTo( mirrorPosition );  
+		earthDistance = camPos.distanceTo( earthPos );
+		volume = map(digitalDistance, 0, 9000, 1, 0);
+		timing = map(digitalDistance, 0, 10000, 100,5000);
+		earthVolume = map(earthDistance, 0, 10000, 1, 0);
+		earthVolume = Math.round(earthVolume*10)/10;
+		earthVolume2 = map(earthDistance, 0, 7000, 1, 0);
+		//buzz.sounds[0].play();
 		// if ( keyboard.pressed("z") ) 
 		// { 
 		// 	// do something
@@ -211,10 +512,12 @@
 		var angleChange = angularSpeed * timeDiff * 2 * Math.PI / 5000;
 		earthMesh.rotation.y += angleChange;
 		glitch.rotation.y += angleChange*1000;
-		//cloudsMesh.rotation.y += angleChange;
-		//cloudsMesh.rotation.x += angleChange/0.7;
 		lastTime = time;
 		controls.update();
+		earthPivot.rotation.y -= earthPivotRotation; //0.001
+		earthPivot.rotation.x += 0.0001; 
+		mirrorPivot.rotation.y += mirrorPivotRotation; //0.03;
+		mirrorPivot.rotation.x -= 0.0001;
 		stats.update();
 	}
 
@@ -232,7 +535,29 @@
 		mirrorSphere.visible = true;
 		renderer.render( scene, camera );
 	}
+	timing = update.timing;
+	setInterval( function(){playSound(volume, timing)}, timing );
+	//setInterval( function(){buzz.sounds[0].play();}, 100);
+	earthVolume = update.earthVolume;
 
+	setInterval( function(){ rain.play(0, earthVolume); }, 1000);
+	setInterval( function(){restaurant.play(0, earthVolume2); }, 2000);
+
+	function map(value,low1,high1,low2,high2){
+				if (value == low1) {
+					return low2;
+				}
+				if (value >= high1) {
+					value = high1;
+				}
+				var range1 = high1 - low1;
+				var range2 = high2 - low2;
+				var result = value - low1;
+				var ratio = result / range1;
+				result = ratio * range2;
+				result += low2;
+				return result;
+	}
 	</script>
 	<script src="js/Hyperlapse.js"></script>
 
